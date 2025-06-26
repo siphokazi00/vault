@@ -1,31 +1,42 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Layout from '../components/Layout'
+import AddDataModal from '../components/AddDataModal'
+import { Plus } from 'lucide-react'
 import { useInsurancePolicies } from '../hooks/useFinancialData'
 import { formatCurrency, formatDate } from '../utils/validation'
 
 const Insurance = () => {
-  const { policies, loading, error } = useInsurancePolicies()
+  const { policies, loading, refetch } = useInsurancePolicies()
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        </div>
-      </Layout>
-    )
-  }
+  const insuranceFields = [
+    { name: 'policy_type', label: 'Policy Type', type: 'select', required: true, options: [
+      { value: 'life', label: 'Life Insurance' },
+      { value: 'car', label: 'Car Insurance' },
+      { value: 'home', label: 'Home Insurance' },
+      { value: 'medical', label: 'Medical Insurance' },
+      { value: 'disability', label: 'Disability Insurance' },
+      { value: 'travel', label: 'Travel Insurance' }
+    ]},
+    { name: 'provider', label: 'Insurance Provider', type: 'text', required: true, placeholder: 'e.g., Old Mutual, Santam' },
+    { name: 'coverage_amount', label: 'Coverage Amount', type: 'number', step: '0.01', min: '0' },
+    { name: 'monthly_premium', label: 'Monthly Premium', type: 'number', required: true, step: '0.01', min: '0' },
+    { name: 'renewal_date', label: 'Renewal Date', type: 'date' },
+    { name: 'status', label: 'Status', type: 'select', options: [
+      { value: 'active', label: 'Active' },
+      { value: 'expired', label: 'Expired' },
+      { value: 'cancelled', label: 'Cancelled' }
+    ]},
+    { name: 'last_claim_date', label: 'Last Claim Date', type: 'date' }
+  ]
 
-  if (error) {
-    return (
-      <Layout>
-        <div className="p-6">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            Error loading insurance data: {error}
-          </div>
-        </div>
-      </Layout>
-    )
+  const handleAddInsurance = async (formData) => {
+    try {
+      console.log('Adding insurance policy:', formData)
+      refetch()
+    } catch (error) {
+      alert('Error adding insurance policy: ' + error.message)
+    }
   }
 
   const getStatusColor = (status) => {
@@ -43,13 +54,32 @@ const Insurance = () => {
     ).join(' ')
   }
 
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      </Layout>
+    )
+  }
+
   return (
     <Layout>
       <div className="p-6">
-        <h2 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-3">
-          <span className="text-4xl">🛡️</span>
-          Insurance Management
-        </h2>
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+            <span className="text-4xl">🛡️</span>
+            Insurance Management
+          </h2>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all"
+          >
+            <Plus size={20} />
+            Add Policy
+          </button>
+        </div>
         
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
           <div className="overflow-x-auto">
@@ -94,7 +124,7 @@ const Insurance = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(policy.status)}`}>
-                          {policy.status.charAt(0).toUpperCase() + policy.status.slice(1)}
+                          {policy.status?.charAt(0).toUpperCase() + policy.status?.slice(1) || 'Active'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-gray-600">
@@ -107,6 +137,14 @@ const Insurance = () => {
             </table>
           </div>
         </div>
+
+        <AddDataModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddInsurance}
+          fields={insuranceFields}
+          title="Add New Insurance Policy"
+        />
       </div>
     </Layout>
   )
